@@ -1,4 +1,4 @@
-﻿OS 可视化平台 - Windows 版
+OS 可视化平台 - Windows 版
 ============================
 
 项目概述
@@ -88,17 +88,4 @@ share/
    README.txt                    本文档
    (build/dist 等在克隆时被忽略)
 
-为何不提交 build/ 和 dist/?
-----------------------------
- 构建产物非常庞大（100+ MB），仓库会变得臃肿
- 二进制文件无法 diff，commit 历史无意义
- 可重现性：源码才是事实源，产物可在任何环境重建
- 发行方式：EXE 应通过 GitHub Releases 或制品库分发，不用 Git 承载
-
-许可证
-------
-请参阅项目主页或 LICENSE 文件。
-
-联系与反馈
----------
 GitHub: https://github.com/gideonQAQ/share
