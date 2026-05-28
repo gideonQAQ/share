@@ -9,7 +9,7 @@ module uart_rx #(
     output reg        rx_valid
 );
 
-    localparam integer BAUD_DIV      = CLK_FREQ_HZ / BAUD_RATE;
+    localparam integer BAUD_DIV      = (CLK_FREQ_HZ + (BAUD_RATE / 2)) / BAUD_RATE;
     localparam integer HALF_BAUD_DIV = BAUD_DIV / 2;
     localparam [1:0] ST_IDLE  = 2'd0;
     localparam [1:0] ST_START = 2'd1;

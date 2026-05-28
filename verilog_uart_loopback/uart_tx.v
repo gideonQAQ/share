@@ -10,7 +10,7 @@ module uart_tx #(
     output reg        tx_busy
 );
 
-    localparam integer BAUD_DIV = CLK_FREQ_HZ / BAUD_RATE;
+    localparam integer BAUD_DIV = (CLK_FREQ_HZ + (BAUD_RATE / 2)) / BAUD_RATE;
     localparam [1:0] ST_IDLE  = 2'd0;
     localparam [1:0] ST_START = 2'd1;
     localparam [1:0] ST_DATA  = 2'd2;
