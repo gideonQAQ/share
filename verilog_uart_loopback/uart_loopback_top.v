@@ -14,6 +14,8 @@ module uart_loopback_top #(
 
     reg        tx_start;
     reg [7:0]  tx_data;
+    reg        pending_full;
+    reg [7:0]  pending_data;
 
     uart_rx #(
         .CLK_FREQ_HZ(CLK_FREQ_HZ),
@@ -42,11 +44,25 @@ module uart_loopback_top #(
         if (!rst_n) begin
             tx_start <= 1'b0;
             tx_data  <= 8'd0;
+            pending_full <= 1'b0;
+            pending_data <= 8'd0;
         end else begin
             tx_start <= 1'b0;
-            if (rx_valid && !tx_busy) begin
-                tx_data  <= rx_data;
-                tx_start <= 1'b1;
+
+            if (rx_valid) begin
+                if (!tx_busy && !pending_full) begin
+                    tx_data  <= rx_data;
+                    tx_start <= 1'b1;
+                end else begin
+                    pending_data <= rx_data;
+                    pending_full <= 1'b1;
+                end
+            end
+
+            if (!tx_busy && pending_full && !tx_start) begin
+                tx_data      <= pending_data;
+                tx_start     <= 1'b1;
+                pending_full <= 1'b0;
             end
         end
     end
