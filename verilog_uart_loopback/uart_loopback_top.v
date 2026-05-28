@@ -49,20 +49,22 @@ module uart_loopback_top #(
         end else begin
             tx_start <= 1'b0;
 
-            if (rx_valid) begin
-                if (!tx_busy && !pending_full) begin
-                    tx_data  <= rx_data;
-                    tx_start <= 1'b1;
-                end else begin
-                    pending_data <= rx_data;
-                    pending_full <= 1'b1;
-                end
-            end
-
-            if (!tx_busy && pending_full && !tx_start) begin
+            if (!tx_busy && pending_full) begin
                 tx_data      <= pending_data;
                 tx_start     <= 1'b1;
                 pending_full <= 1'b0;
+                if (rx_valid) begin
+                    pending_data <= rx_data;
+                    pending_full <= 1'b1;
+                end
+            end else if (rx_valid) begin
+                if (!tx_busy) begin
+                    tx_data  <= rx_data;
+                    tx_start <= 1'b1;
+                end else if (!pending_full) begin
+                    pending_data <= rx_data;
+                    pending_full <= 1'b1;
+                end
             end
         end
     end
