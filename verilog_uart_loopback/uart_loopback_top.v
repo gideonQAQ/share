@@ -11,10 +11,21 @@ module uart_loopback_top #(
     wire [7:0] rx_data;
     wire       rx_valid;
     wire       tx_busy;
+    wire [7:0] tx_data;
 
     reg        tx_start;
-    reg        pending_full;
-    reg [7:0]  pending_data;
+    reg        rd_ptr;
+    reg        wr_ptr;
+    reg [1:0]  fifo_count;
+    reg [7:0]  fifo_data0;
+    reg [7:0]  fifo_data1;
+
+    wire fifo_empty = (fifo_count == 2'd0);
+    wire fifo_full  = (fifo_count == 2'd2);
+    wire do_send    = (!tx_busy && !fifo_empty);
+    wire do_recv    = (rx_valid && !fifo_full);
+
+    assign tx_data = rd_ptr ? fifo_data1 : fifo_data0;
 
     uart_rx #(
         .CLK_FREQ_HZ(CLK_FREQ_HZ),
@@ -33,7 +44,7 @@ module uart_loopback_top #(
     ) u_uart_tx (
         .clk(clk),
         .rst_n(rst_n),
-        .tx_data(pending_data),
+        .tx_data(tx_data),
         .tx_start(tx_start),
         .txd(uart_txd),
         .tx_busy(tx_busy)
@@ -42,24 +53,33 @@ module uart_loopback_top #(
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             tx_start <= 1'b0;
-            pending_full <= 1'b0;
-            pending_data <= 8'd0;
+            rd_ptr    <= 1'b0;
+            wr_ptr    <= 1'b0;
+            fifo_count <= 2'd0;
+            fifo_data0 <= 8'd0;
+            fifo_data1 <= 8'd0;
         end else begin
             tx_start <= 1'b0;
 
-            if (!tx_busy && pending_full) begin
-                tx_start     <= 1'b1;
-                pending_full <= 1'b0;
-                if (rx_valid) begin
-                    pending_data <= rx_data;
-                    pending_full <= 1'b1;
-                end
-            end else if (rx_valid) begin
-                if (!pending_full) begin
-                    pending_data <= rx_data;
-                    pending_full <= 1'b1;
-                end
+            if (do_send) begin
+                tx_start <= 1'b1;
+                rd_ptr   <= ~rd_ptr;
             end
+
+            if (do_recv) begin
+                if (!wr_ptr) begin
+                    fifo_data0 <= rx_data;
+                end else begin
+                    fifo_data1 <= rx_data;
+                end
+                wr_ptr <= ~wr_ptr;
+            end
+
+            case ({do_recv, do_send})
+                2'b10: fifo_count <= fifo_count + 2'd1;
+                2'b01: fifo_count <= fifo_count - 2'd1;
+                default: fifo_count <= fifo_count;
+            endcase
         end
     end
 
