@@ -89,3 +89,22 @@ share/
    (build/dist 等在克隆时被忽略)
 
 GitHub: https://github.com/gideonQAQ/share
+
+Verilog UART 回环示例（50MHz / 115200）
+--------------------------------------
+目录：verilog_uart_loopback/
+
+包含文件：
+  uart_rx.v            UART 接收模块（8N1）
+  uart_tx.v            UART 发送模块（8N1）
+  uart_loopback_top.v  顶层回环模块（收到什么就发回什么）
+
+参数默认值：
+  CLK_FREQ_HZ = 50_000_000
+  BAUD_RATE   = 115_200
+
+顶层端口：
+  clk       板载时钟输入（50MHz）
+  rst_n     低有效复位
+  uart_rxd  串口接收输入
+  uart_txd  串口发送输出
