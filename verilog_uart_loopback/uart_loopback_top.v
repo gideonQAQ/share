@@ -14,8 +14,6 @@ module uart_loopback_top #(
     wire [7:0] tx_data;
 
     reg        tx_start;
-    reg        rd_ptr;
-    reg        wr_ptr;
     reg [1:0]  fifo_count;
     reg [7:0]  fifo_data0;
     reg [7:0]  fifo_data1;
@@ -25,7 +23,7 @@ module uart_loopback_top #(
     wire do_send    = (!tx_busy && !fifo_empty);
     wire do_recv    = (rx_valid && !fifo_full);
 
-    assign tx_data = rd_ptr ? fifo_data1 : fifo_data0;
+    assign tx_data = fifo_data0;
 
     uart_rx #(
         .CLK_FREQ_HZ(CLK_FREQ_HZ),
@@ -53,32 +51,49 @@ module uart_loopback_top #(
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             tx_start <= 1'b0;
-            rd_ptr    <= 1'b0;
-            wr_ptr    <= 1'b0;
             fifo_count <= 2'd0;
             fifo_data0 <= 8'd0;
             fifo_data1 <= 8'd0;
         end else begin
             tx_start <= 1'b0;
-
-            if (do_send) begin
-                tx_start <= 1'b1;
-                rd_ptr   <= ~rd_ptr;
-            end
-
-            if (do_recv) begin
-                if (!wr_ptr) begin
-                    fifo_data0 <= rx_data;
-                end else begin
-                    fifo_data1 <= rx_data;
+            case (fifo_count)
+                2'd0: begin
+                    if (do_recv) begin
+                        fifo_data0 <= rx_data;
+                        fifo_count <= 2'd1;
+                    end
                 end
-                wr_ptr <= ~wr_ptr;
-            end
 
-            case ({do_recv, do_send})
-                2'b10: fifo_count <= fifo_count + 2'd1;
-                2'b01: fifo_count <= fifo_count - 2'd1;
-                default: fifo_count <= fifo_count;
+                2'd1: begin
+                    if (do_send && do_recv) begin
+                        tx_start   <= 1'b1;
+                        fifo_data0 <= rx_data;
+                        fifo_count <= 2'd1;
+                    end else if (do_send) begin
+                        tx_start   <= 1'b1;
+                        fifo_count <= 2'd0;
+                    end else if (do_recv) begin
+                        fifo_data1 <= rx_data;
+                        fifo_count <= 2'd2;
+                    end
+                end
+
+                2'd2: begin
+                    if (do_send && do_recv) begin
+                        tx_start   <= 1'b1;
+                        fifo_data0 <= fifo_data1;
+                        fifo_data1 <= rx_data;
+                        fifo_count <= 2'd2;
+                    end else if (do_send) begin
+                        tx_start   <= 1'b1;
+                        fifo_data0 <= fifo_data1;
+                        fifo_count <= 2'd1;
+                    end
+                end
+
+                default: begin
+                    fifo_count <= 2'd0;
+                end
             endcase
         end
     end
